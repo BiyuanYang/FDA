@@ -30,6 +30,9 @@ new_train,new_test = model_selection.train_test_split(traindata,test_size = 0.5)
 
 X_train = new_train[:,1:]
 Y_train = new_train[:,0]
+
+
+"""Change the classification method here"""
 #classifier = RandomForestClassifier(n_estimators = 10, criterion = 'entropy', random_state = 0)
 classifier = LogisticRegression(random_state=0)
 #classifier = DecisionTreeClassifier(max_depth=3)
@@ -404,7 +407,7 @@ for p in range(10):
 
 
 
-    """comb"""
+    """combition 1:1"""
     X_imputed3=X_imputed.copy()
     maximp3 = sorted(range(len(pre_accimp)), key = lambda sub: pre_accimp[sub])[(int(len(pre_accimp)*(1-0.3*0.5))):]
     for i in maximp3:
@@ -419,9 +422,7 @@ for p in range(10):
 
     plt.scatter(x_axis_data4, y_axis_data4,  c='red', marker='*',alpha=0.1, linewidth=2)#, label='combination')
 
-
-
-
+    """combition 3:7"""
     X_imputed4=X_imputed.copy()
     maximp3 = sorted(range(len(pre_accimp)), key = lambda sub: pre_accimp[sub])[(int(len(pre_accimp)*(1-0.3*0.3))):]
     for i in maximp3:
@@ -436,6 +437,7 @@ for p in range(10):
 
     plt.scatter(x_axis_data5, y_axis_data5,  c='m',marker='^', alpha=0.1, linewidth=2)#, label='combination')
     
+    """combition 7:3"""
     X_imputed5=X_imputed.copy()
     maximp3 = sorted(range(len(pre_accimp)), key = lambda sub: pre_accimp[sub])[(int(len(pre_accimp)*(1-0.3*0.7))):]
     for i in maximp3:
