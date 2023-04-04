@@ -240,48 +240,19 @@ def importance(trainmodel,testmodel):
       Y_train.append(float(n));
     X_test = testmodel
 
-    
-    #input()
     from sklearn.linear_model import LinearRegression
     model = LinearRegression()
     model.fit(X_train, Y_train)
 
     preimp=model.predict(X_test)
 
-    #print(preimp)
 
     importance=preimp.tolist()
     return importance
 
 
 def produce_NA(X, p_miss, mecha, opt=None, p_obs=None, q=None):
-    """
-    Generate missing values for specifics missing-data mechanism and proportion of missing values. 
-    
-    Parameters
-    ----------
-    X : torch.DoubleTensor or np.ndarray, shape (n, d)
-        Data for which missing values will be simulated.
-        If a numpy array is provided, it will be converted to a pytorch tensor.
-    p_miss : float
-        Proportion of missing values to generate for variables which will have missing values.
-    mecha : str, 
-            Indicates the missing-data mechanism to be used. "MCAR" by default, "MAR", "MNAR" or "MNARsmask"
-    opt: str, 
-         For mecha = "MNAR", it indicates how the missing-data mechanism is generated: using a logistic regression ("logistic"), quantile censorship ("quantile") or logistic regression for generating a self-masked MNAR mechanism ("selfmasked").
-    p_obs : float
-            If mecha = "MAR", or mecha = "MNAR" with opt = "logistic" or "quanti", proportion of variables with *no* missing values that will be used for the logistic masking model.
-    q : float
-        If mecha = "MNAR" and opt = "quanti", quantile level at which the cuts should occur.
-    
-    Returns
-    ----------
-    A dictionnary containing:
-    'X_init': the initial data matrix.
-    'X_incomp': the data with the generated missing values.
-    'mask': a matrix indexing the generated missing values.s
-    """
-    
+     
     to_torch = torch.is_tensor(X) ## output a pytorch tensor, or a numpy array
     if not to_torch:
         X = X.astype(np.float32)
@@ -301,10 +272,7 @@ def produce_NA(X, p_miss, mecha, opt=None, p_obs=None, q=None):
     X_nas = X.clone()
     X_nas[mask.bool()] = np.nan
     
-    #return {'X_init': X.double(), 'X_incomp': X_nas.double(), 'mask': mask}
-    #print(X_nas.double()[:10])
     missdata=X_nas
-    #print(missdata.ytpe())
     return missdata
 
 def getbias(x,classifier):
@@ -312,46 +280,40 @@ def getbias(x,classifier):
     Female = np.array(list(filter(lambda x: x[1] == 0, x)))
     X_testM = Male[:,1:]
     Y_testM = Male[:,0]
-    """卷积"""
+    """if you use CNN to do the classification, delete the comment out mark#"""
     #X_testM = pad_sequences(X_testM, padding='post', maxlen=100)
     
     
-    """Fair"""
+    """if you use CNN to do the classification, delete the comment out mark#"""
     Y_predM = classifier.predict(X_testM)
     #Y_predM = classifier.predict(X_testM[:,1:])
     
-    """卷积"""
+    """if you use CNN to do the classification, delete the comment out mark#"""
     #threshold = 0.5
     #Y_predM = np.where(Y_predM > threshold, 1, 0)
 
     
     cnf_matrixM = confusion_matrix(Y_testM, Y_predM)
-    #print(cnf_matrixM)
     X_testF = Female[:,1:]
     Y_testF = Female[:,0]
-    #Calculate the accurancy without miss data
     
     
-    """卷积"""
+    """if you use CNN to do the classification, delete the comment out mark#"""
     #X_testF = pad_sequences(X_testF, padding='post', maxlen=100)
     
-    """Fair"""
+    """A part of Fair preprocessing, remove the protected attribute when train the model """
     Y_predF = classifier.predict(X_testF)
     #Y_predF = classifier.predict(X_testF[:,1:])
 
     
-    """卷积"""
+    """if you use CNN to do the classification, delete the comment out mark#"""
     #Y_predF = np.where(Y_predF > threshold, 1, 0)
     
     cnf_matrixF = confusion_matrix(Y_testF, Y_predF)
-    #print(cnf_matrixF)
 
 
     accurancy=(cnf_matrixM[1][1]+cnf_matrixM[0][0]+cnf_matrixF[1][1]+cnf_matrixF[0][0])/(sum(sum(cnf_matrixF))+sum(sum(cnf_matrixM)))
-    #print(accurancy)
-#bias=abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
     bias=abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
-    #print(bias)
     return accurancy,bias,Y_predM,Y_predF,Male,Female,Y_testM,Y_testF,cnf_matrixM,cnf_matrixF
 
 
