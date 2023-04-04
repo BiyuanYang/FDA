@@ -16,15 +16,14 @@ from statistics import mean
 
 
 
-data_df = pd.read_csv('./dataset/creditcard_clean.csv', delimiter=',', header=None)
+data_df = pd.read_csv('./Dataset/compas_clean.csv', delimiter=',', header=None)
 data = data_df.values
 
 #split dataset
 
-c_train,c_test = model_selection.train_test_split(data,test_size = 0.4)
+c_train,c_test = model_selection.train_test_split(data,test_size = 0.3)
 traindata=c_train
-#c_train,c_test = model_selection.train_test_split(c_train,test_size = 0.5)
-#traindata=c_train
+
 
 
 new_train,new_test = model_selection.train_test_split(traindata,test_size = 0.5)
@@ -42,31 +41,17 @@ classifier.fit(X_train, Y_train)
 
 X_full=new_test
 
-#完整数据跟inputed的数据分别分类，然后看结果的差别
-"""完整数据"""
+
+"""full dastaset, get the classlabel without missing value"""
 Male = np.array(list(filter(lambda x: x[1] == 1, X_full)))
 Female = np.array(list(filter(lambda x: x[1] == 0, X_full)))
 X_testM = Male[:,1:]
 Y_testM = Male[:,0]
-    #Calculate the accurancy without miss data
 Y_predM1 = classifier.predict(X_testM)
-cnf_matrixM = confusion_matrix(Y_testM, Y_predM1)
-#print(cnf_matrixM)
 X_testF = Female[:,1:]
 Y_testF = Female[:,0]
-    #Calculate the accurancy without miss data
 Y_predF1 = classifier.predict(X_testF)
-cnf_matrixF = confusion_matrix(Y_testF, Y_predF1)
-#print(cnf_matrixF)
 
-
-accurancy=(cnf_matrixM[1][1]+cnf_matrixM[0][0]+cnf_matrixF[1][1]+cnf_matrixF[0][0])/(sum(sum(cnf_matrixF))+sum(sum(cnf_matrixM)))
-#print("Accurancy full:",accurancy)
-#bias=abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
-bias=abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
-
-#print("Accurancy full:",accurancy)
-#print("Bias full:",bias)
 
 fulldata=np.vstack((Male, Female))
 
@@ -81,14 +66,17 @@ comba2,combb2=[],[]
 onlyvara,onlyvarb=[],[]
 protecta,protectb=[],[]
 
-for p in range(5):
-    """缺失数据"""
+
+"""Run it ten times and average the results ten times"""
+for p in range(10):
+
+
+    """Manufacturing missing data"""
     X_protect = new_test[:,:2]
     X_miss = new_test[:,2:]
 
 
     X_miss=produce_NA(X_miss, 0.4, mecha="MCAR", opt=None, p_obs=None, q=None)
-    #保持protect feature完整之后对其他feature生产确实数据，然后重新整合
     x=[]
     for i in range(len(X_miss)):
         x.append(np.insert(X_miss[i].tolist(),0,X_protect[i]))
@@ -98,10 +86,8 @@ for p in range(5):
 
 
 
-    """数据填充Imputation"""
-    #另一种imputation
-    m_imputations=5
-
+    """Imputation, can change the imputation methods"""
+    m_imputations=5#Times of imputation
     X_imputed,imputation_var,imputed_list1=knn_imputation(X_miss, m_imputations)
     #X_imputed,imputation_var,imputed_list1=multiple_imputation(X_miss,m_imputations, 1)
 
@@ -113,24 +99,18 @@ for p in range(5):
     Female = np.array(list(filter(lambda x: x[1] == 0, X_imputed)))
     X_testM = Male[:,1:]
     Y_testM = Male[:,0]
-        #Calculate the accurancy without miss data
     Y_predM2 = classifier.predict(X_testM)
     cnf_matrixM = confusion_matrix(Y_testM, Y_predM2)
-    #print(cnf_matrixM)
     X_testF = Female[:,1:]
     Y_testF = Female[:,0]
-        #Calculate the accurancy without miss data
     Y_predF2 = classifier.predict(X_testF)
     cnf_matrixF = confusion_matrix(Y_testF, Y_predF2)
-    #print(cnf_matrixF)
+
 
 
 
     accurancy=(cnf_matrixM[1][1]+cnf_matrixM[0][0]+cnf_matrixF[1][1]+cnf_matrixF[0][0])/(sum(sum(cnf_matrixF))+sum(sum(cnf_matrixM)))
-    #print("Imputed accurancy:",accurancy)
-    #bias=abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
     bias2=abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
-    #print("Imputed bias:",bias2)
 
 
      
@@ -139,7 +119,7 @@ for p in range(5):
     """Accurancy importance"""
 
 
-    #获取两个方差
+    #Get Missing variance MV and Class variance CV
     global class_var
     class_list=[classifier.predict(i[:,1:]) for i in imputed_list1]
     class_var=np.var(class_list,axis=0,ddof=1)
@@ -150,22 +130,22 @@ for p in range(5):
 
 
 
-    #将两个方差放到feature里
+    #Put MV and CV as 2 new features
     for i in range(len(imputation_var)):
         trainmodel=np.append(X_imputed,imputation_var.T,axis=1)
         trainmodel=np.append(trainmodel,class_var.T,axis=1)
         
-    importance1=[]
+    importance_acc=[]
     for i in range(len(class_list[0])):
         k=0
         for j in range(len(class_list)):
             if class_list[j][i]==new_test[:,0][i]:
                 k+=1
-        importance1.append(1-k/m_imputations)
+        importance_acc.append(1-k/m_imputations)
 
-
+    """Train fair importance model"""
     accmodel = LinearRegression()
-    accmodel.fit(trainmodel, importance1)
+    accmodel.fit(trainmodel, importance_acc)
 
 
 
@@ -175,50 +155,50 @@ for p in range(5):
 
 
 
-    """importance"""
+    """Fairness importance(Calculate the difference of bias when use imputed values and real values)"""
 
-    importance=[]
+    importance_fair=[]
     for i in range(len(Y_predM1)):
         if Y_predM2[i]==Y_predM1[i]:
-            importance.append(0)
+            importance_fair.append(0)
             
         elif Y_testM[i]==1:
             if Y_predM2[i]==1:
-                importance.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-(cnf_matrixM[1][1]-1)/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-(cnf_matrixM[1][1]-1)/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
             else:
-                importance.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-(cnf_matrixM[1][1]+1)/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-(cnf_matrixM[1][1]+1)/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
         else:
             if Y_predM2[i]==0:
-                importance.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-(cnf_matrixM[0][1]+1)/(cnf_matrixM[0][1]+cnf_matrixM[0][0]+1))-bias2)
+                importance_fair.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-(cnf_matrixM[0][1]+1)/(cnf_matrixM[0][1]+cnf_matrixM[0][0]+1))-bias2)
             else:
-                importance.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-(cnf_matrixM[0][1]-1)/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-(cnf_matrixM[0][1]-1)/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
 
     for i in range(len(Y_predF1)):
         if Y_predF2[i]==Y_predF1[i]:
-            importance.append(0)
+            importance_fair.append(0)
             
         elif Y_testF[i]==1:
             if Y_predF2[i]==1:
-                importance.append(abs((cnf_matrixF[1][1]-1)/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs((cnf_matrixF[1][1]-1)/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
             else:
-                importance.append(abs((cnf_matrixF[1][1]+1)/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs((cnf_matrixF[1][1]+1)/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
         else:
             if Y_predF2[i]==0:
-                importance.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs((cnf_matrixF[0][1]+1)/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs((cnf_matrixF[0][1]+1)/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
             else:
-                importance.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs((cnf_matrixF[0][1]-1)/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
+                importance_fair.append(abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs((cnf_matrixF[0][1]-1)/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))-bias2)
 
     aldata=np.vstack((Male_train, Female_train))
 
 
 
-    """训练importance model"""
+    """Train fair importance model"""
     biasmodel = LinearRegression()
-    biasmodel.fit(aldata, importance)
+    biasmodel.fit(aldata, importance_fair)
 
 
 
-    """Test Test Test"""
+    """Testset"""
     accfull,biasfull,Y_predM,Y_predF,Male,Female,Y_testM,Y_testF,cnf_matrixM,cnf_matrixF = getbias(c_test,classifier)
     print("Accurancy full:",accfull)
     print("Bias full:",biasfull)
@@ -233,20 +213,16 @@ for p in range(5):
     X_miss = np.array(x)
 
 
-    """数据填充Imputation"""
+    """Imputation"""
     m_imputations=5
     X_imputed,imputation_var,imputed_list1=knn_imputation(X_miss, m_imputations)
-    #X_imputed,imputation_var,imputed_list1=multiple_imputation(X_miss,m_imputations, 1)
+
     
     var_imp=imputation_uncertainty(imputed_list1)
 
 
-    X_al=X_imputed.copy()
-    X_random=X_imputed.copy()
-    X_imputed3=X_imputed.copy()
-    X_imputed2=X_imputed.copy()
 
-
+ 
     accmiss,biasmiss,Y_predM,Y_predF,Male,Female,Y_testM,Y_testF,cnf_matrixM,cnf_matrixF = getbias(X_imputed,classifier)
     print("Accurancy miss:",accmiss)
     print("Bias miss:",biasmiss)
@@ -254,8 +230,7 @@ for p in range(5):
 
 
 
-    #获取两个方差
-
+    #Get variance
     class_list=[classifier.predict(i[:,1:]) for i in imputed_list1]
     class_var=np.var(class_list,axis=0,ddof=1)
 
@@ -264,7 +239,7 @@ for p in range(5):
 
 
 
-    #将两个方差放到feature里
+    #put MV and CV to the features
     for i in range(len(imputation_var)):
         testmodel=np.append(X_imputed,imputation_var.T,axis=1)
         testmodel=np.append(testmodel,class_var.T,axis=1)
@@ -277,7 +252,7 @@ for p in range(5):
 
 
 
-    """将男女分组"""
+    """Part of fair pre-processing (protected group and other proportional sampling)"""
     accimp_M,accimp_F=[],[]
     for i in range(len(pre_accimp)):
         if testmodel[i][1]==1:
@@ -297,15 +272,6 @@ for p in range(5):
     
     pre_biasimp=preimp.tolist()
 
-    """maximp1 = sorted(range(len(pre_biasimp)), key = lambda sub: pre_biasimp[sub])[:(int(len(pre_biasimp)*0.4))]
-    for i in maximp1:
-        X_al[i]=c_test[i]
-        
-    newacc,newbias,Y_predM,Y_predF,Male,Female,Y_testM,Y_testF,cnf_matrixM,cnf_matrixF=getbias(X_al,classifier)
-    print("Accurancy al(only bias):",newacc)
-    print("Bias al(only bias):",newbias)
-
-    """
 
 
     x_axis_data = []
@@ -328,13 +294,8 @@ for p in range(5):
     y_axis_data8 = []
     
     
-    
-    """男女分开抽样"""
-    #X_imputed6=X_imputed.copy()
-    
-    
-    
-        
+    """Equal proportional sampling of protected groups"""
+
     for i in sorted(range(len(accimp_F)), key = lambda sub: accimp_F[sub])[(int(len(accimp_F)*(1-0.3))):]:
         Female_imputed[i]=Female_full[i]
     for i in sorted(range(len(accimp_M)), key = lambda sub: accimp_M[sub])[(int(len(accimp_M)*(1-0.3))):]:
@@ -512,7 +473,7 @@ plt.scatter([mean(protectb)],[mean(protecta)], c='olive',marker='P', alpha=1, li
 
 plt.ylabel("Acc",fontsize=12)
 plt.xlabel("Bias",fontsize=12)
-#plt.legend()
+plt.legend()
 plt.show()
 
 
