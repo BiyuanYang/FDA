@@ -53,8 +53,8 @@ classifier.fit(X_train, Y_train)
 
 X_full=new_test
 
-#完整数据跟inputed的数据分别分类，然后看结果的差别
-"""完整数据"""
+
+"""Full data"""
 Male = np.array(list(filter(lambda x: x[1] == 1, X_full)))
 Female = np.array(list(filter(lambda x: x[1] == 0, X_full)))
 X_testM = Male[:,1:]
@@ -89,13 +89,12 @@ fulldata=np.vstack((Male, Female))
 
 
 
-"""缺失数据"""
+"""Dataste with missing value"""
 X_protect = new_test[:,:2]
 X_miss = new_test[:,2:]
 
 
 X_miss=produce_NA(X_miss, 0.6, mecha="MCAR", opt=None, p_obs=None, q=None)
-#保持protect feature完整之后对其他feature生产确实数据，然后重新整合
 x=[]
 for i in range(len(X_miss)):
     x.append(np.insert(X_miss[i].tolist(),0,X_protect[i]))
@@ -105,7 +104,7 @@ X_miss = np.array(x)
 
 
 
-"""数据填充Imputation"""
+"""Imputation"""
 #另一种imputation
 m_imputations=5
 
@@ -118,31 +117,20 @@ Male = np.array(list(filter(lambda x: x[1] == 1, X_imputed)))
 Female = np.array(list(filter(lambda x: x[1] == 0, X_imputed)))
 X_testM = Male[:,1:]
 Y_testM = Male[:,0]
-    #Calculate the accurancy without miss data
 Y_predM2 = classifier.predict(X_testM)
-
-cnf_matrixM = confusion_matrix(Y_testM, Y_predM2)
-#print(cnf_matrixM)
 X_testF = Female[:,1:]
 Y_testF = Female[:,0]
-    #Calculate the accurancy without miss data
 Y_predF2 = classifier.predict(X_testF)
 
-cnf_matrixF = confusion_matrix(Y_testF, Y_predF2)
-#print(cnf_matrixF)
-
-accurancy=(cnf_matrixM[1][1]+cnf_matrixM[0][0]+cnf_matrixF[1][1]+cnf_matrixF[0][0])/(sum(sum(cnf_matrixF))+sum(sum(cnf_matrixM)))
-#print("Imputed accurancy:",accurancy)
-#bias=abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
 bias2=abs(cnf_matrixF[1][1]/(cnf_matrixF[1][1]+cnf_matrixF[1][0])-cnf_matrixM[1][1]/(cnf_matrixM[1][1]+cnf_matrixM[1][0]))+abs(cnf_matrixF[0][1]/(cnf_matrixF[0][1]+cnf_matrixF[0][0])-cnf_matrixM[0][1]/(cnf_matrixM[0][1]+cnf_matrixM[0][0]))
-#print("Imputed bias:",bias2)
+
 
 
 
 """Accurancy importance"""
 
 
-#获取两个方差
+#get variance
 global class_var
 
 
@@ -156,7 +144,7 @@ class_var=class_var[:,np.newaxis].T
 
 
 
-#将两个方差放到feature里
+#put Mv and Cv to the Train_Al as 2 new features
 for i in range(len(imputation_var)):
     trainmodel=np.append(X_imputed,imputation_var.T,axis=1)
     trainmodel=np.append(trainmodel,class_var.T,axis=1)
@@ -216,7 +204,7 @@ aldata=np.vstack((Male_train, Female_train))
 
 
 
-"""训练importance model"""
+""" train importance model"""
 biasmodel = LinearRegression()
 biasmodel.fit(aldata, importance)
 
@@ -237,7 +225,7 @@ for i in range(len(X_miss)):
 X_miss = np.array(x)
 
 
-"""数据填充Imputation"""
+"""Imputation"""
 m_imputations=5
 X_imputed,imputation_var,imputed_list1=knn_imputation(X_miss, m_imputations)
 #X_imputed,imputation_var,imputed_list1=multiple_imputation(X_miss,m_imputations, 1)
@@ -259,7 +247,7 @@ print("Bias miss:",biasmiss)
 
 
 
-#获取两个方差
+#get var
 
 class_list=[classifier.predict(i[:,1:]) for i in imputed_list1]
 class_var=np.var(class_list,axis=0,ddof=1)
@@ -268,8 +256,6 @@ imputation_var=imputation_var[:,np.newaxis].T
 class_var=class_var[:,np.newaxis].T
 
 
-
-#将两个方差放到feature里
 for i in range(len(imputation_var)):
     testmodel=np.append(X_imputed,imputation_var.T,axis=1)
     testmodel=np.append(testmodel,class_var.T,axis=1)
@@ -279,7 +265,7 @@ pre_accimp=accmodel.predict(testmodel)
 preimp=biasmodel.predict(testmodel)
 pre_biasimp=preimp.tolist()
 
-"""将男女分组"""
+
 accimp_M,accimp_F=[],[]
 for i in range(len(pre_accimp)):
     if testmodel[i][1]==1:
@@ -305,7 +291,7 @@ y_axis_data5 = []
 
 dot=[]
 
-
+"""get the result from 0-40%(selection ratio)"""
 k=0
 while k<=0.4:
     X_al=X_imputed.copy()
