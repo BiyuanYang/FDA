@@ -16,7 +16,7 @@ from statistics import mean
 
 
 
-data_df = pd.read_csv('./dataset/adult_clean.csv', delimiter=',', header=None)
+data_df = pd.read_csv('./datasets/adult_clean.csv', delimiter=',', header=None)
 data = data_df.values
 
 #split dataset
